@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agentic AI Inventory Replenishment</title>
+<style>
+:root{--ink:#1d2433;--mute:#5b6577;--line:#dde2ea;--bg:#f5f7fa;--brand:#1f4e79;--ai:#6b3fa0}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:var(--bg)}
+nav{background:var(--brand);color:#fff;display:flex;align-items:center;gap:22px;padding:10px 24px}
+nav a{color:#fff;text-decoration:none;opacity:.85}nav a.on,nav a:hover{opacity:1;text-decoration:underline}
+nav .who{margin-left:auto;display:flex;gap:8px;align-items:center}nav select{font:inherit}
+main{max-width:1180px;margin:0 auto;padding:20px 24px}
+h1{font-size:20px;margin:4px 0 14px}h2{font-size:15px;margin:22px 0 8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;background:#fff}th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--mute);font-weight:600;background:#fafbfd}
+.chip{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid}
+.CRITICAL,.HIGH,.SHORTAGE,.DAMAGED,.ESCALATED,.ON_HOLD,.REJECTED{color:#a1261b;background:#fdecea;border-color:#f3b8b2}
+.MEDIUM,.FLAGGED,.FLAGGED_FOR_REVIEW,.OVERAGE,.PARTIALLY_RECEIVED,.DELAYED,.REVISION_REQUESTED{color:#8a5a00;background:#fff4dc;border-color:#f0d08a}
+.LOW,.NONE,.NO_ACTION,.RESOLVED,.APPROVED,.SUBMITTED,.RECEIVED,.NO_REPLENISHMENT,.CONFIRMED{color:#1d6b35;background:#e7f5ec;border-color:#a9d8b8}
+.PENDING_APPROVAL,.DRAFT{color:#1f4e79;background:#e8f0f9;border-color:#a9c4e2}
+.ai{border-left:4px solid var(--ai)}.ailabel{color:var(--ai);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.counters{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.counters .card b{font-size:26px;display:block}
+button,.btn{font:inherit;padding:6px 12px;border-radius:6px;border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer;text-decoration:none;display:inline-block}
+button.sec{background:#fff;color:var(--brand)}input,textarea,select{font:inherit;padding:6px;border:1px solid var(--line);border-radius:6px}
+.flash{padding:9px 12px;border-radius:6px;margin-bottom:12px;border:1px solid}.flash.ok{background:#e7f5ec;border-color:#a9d8b8}
+.flash.warn{background:#fff4dc;border-color:#f0d08a}.flash.err{background:#fdecea;border-color:#f3b8b2}
+.mute{color:var(--mute)}.best{background:#f1f7ee}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.big input{font-size:18px;width:110px;padding:8px}
+</style></head><body>
+<nav><b>Replenishment</b>
+{% if current_user.Role == 'STORE_MANAGER' %}
+<a href="{{ url_for('dashboard') }}" class="{{ 'on' if request.endpoint=='dashboard' }}">Inventory Status</a>
+<a href="{{ url_for('orders') }}" class="{{ 'on' if request.endpoint=='orders' }}">Orders &amp; Exceptions</a>
+{% endif %}
+<a href="{{ url_for('receive') }}" class="{{ 'on' if request.endpoint=='receive' }}">Receive Shipment</a>
+<form class="who" method="post" action="{{ url_for('switch_user') }}">Signed in as
+<select name="user_id" onchange="this.form.submit()">{% for u in users %}<option value="{{u.UserID}}" {{'selected' if u.UserID==current_user.UserID}}>{{u.FullName}} – {{u.Role.replace('_',' ').title()}}</option>{% endfor %}</select></form>
+</nav><main>
+{% for cat,msg in get_flashed_messages(with_categories=true) %}<div class="flash {{cat}}">{{msg}}</div>{% endfor %}
+{% block body %}{% endblock %}
+</main></body></html>

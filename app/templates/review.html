@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% block body %}
+<h1>Purchase Request #{{req.RecommendationID}} – {{req.SKU}} {{req.ProductName}} <span class="chip {{req.Status}}">{{req.Status.replace('_',' ').title()}}</span></h1>
+<div class="grid2">
+<div class="card ai"><div class="ailabel">AI-drafted · needs your approval</div>
+ <p style="font-size:22px;margin:6px 0"><b>{{req.RecommendedQuantity or '—'}}</b> units from <b>{{req.SupplierName or 'no supplier'}}</b>
+ {% if req.EstimatedCost %}· est. <b>${{'%.2f'|format(req.EstimatedCost)}}</b>{% endif %}</p>
+ <p><b>Reason:</b> {{req.Reason}}</p>
+ <p class="mute">Created {{req.CreatedAt}} by {{req.CreatedByAgent}} · Risk <span class="chip {{req.RiskLevel}}">{{req.RiskLevel}}</span></p></div>
+<div class="card"><b>Inventory now</b><br>CurrentStock {{inv.CurrentStock}} · ReorderLevel {{inv.ReorderLevel}} · SafetyStock {{inv.SafetyStock}} · {{inv.Location}}
+{% if approval %}<h2>Decision recorded</h2><p><span class="chip {{ {'APPROVE':'APPROVED','REJECT':'REJECTED','REVISE':'REVISION_REQUESTED'}[approval.Decision] }}">{{approval.Decision}}</span>
+ by {{approval.FullName}} on {{approval.DecisionDate}}<br>{{approval.Comments or ''}}</p>{% endif %}
+{% if po %}<p>Purchase order <b>PO-{{po.POID}}</b> <span class="chip {{po.Status}}">{{po.Status}}</span> total ${{'%.2f'|format(po.TotalAmount)}}, expected {{po.ExpectedDeliveryDate}}
+ {% if po.HoldReason %}<br><b>On hold:</b> {{po.HoldReason}}{% endif %}</p>{% endif %}
+</div></div>
+{% if ranked or excluded %}
+<h2>Approved supplier comparison (MC-03)</h2>
+<table><tr><th>Supplier</th><th>UnitPrice</th><th>LeadTime</th><th>MinimumOrderQuantity</th><th>Availability</th><th>PerformanceRating</th><th>Order qty</th><th>Est. cost</th><th>Score</th></tr>
+{% for s in ranked %}<tr class="{{'best' if s.SupplierID==req.SupplierID}}"><td>{{s.SupplierName}}{% if s.SupplierID==req.SupplierID %} <b>(proposed)</b>{% endif %}</td>
+<td>${{'%.2f'|format(s.UnitPrice)}}</td><td>{{s.LeadTime}} d</td><td>{{s.MinimumOrderQuantity}}</td><td><span class="chip {{'LOW' if s.Availability=='AVAILABLE' else 'MEDIUM'}}">{{s.Availability}}</span></td>
+<td>{{s.PerformanceRating}}</td><td>{{s.orderQty}}</td><td>${{'%.2f'|format(s.estimatedCost)}}</td><td>{{'%.2f'|format(s.score)}}</td></tr>{% endfor %}
+{% for s in excluded %}<tr class="mute"><td>{{s.SupplierName}}</td><td>${{'%.2f'|format(s.UnitPrice)}}</td><td>{{s.LeadTime}} d</td><td>{{s.MinimumOrderQuantity}}</td><td>{{s.Availability}}</td><td>{{s.PerformanceRating}}</td><td colspan="3">Excluded – {{s.reason}}</td></tr>{% endfor %}
+</table>{% endif %}
+{% if req.Status == 'PENDING_APPROVAL' and current_user.Role == 'STORE_MANAGER' %}
+<h2>Your decision (UC-05)</h2>
+<form class="card" method="post" action="{{ url_for('decide', rid=req.RecommendationID) }}">
+ <label><input type="radio" name="decision" value="APPROVE" checked> Approve</label>&nbsp;
+ <label><input type="radio" name="decision" value="REJECT"> Reject</label>&nbsp;
+ <label><input type="radio" name="decision" value="REVISE"> Revise</label><br><br>
+ <textarea name="comments" rows="2" style="width:100%" placeholder="Comments (required for Reject or Revise)"></textarea><br><br>
+ <button>Submit decision</button></form>
+{% elif req.Status == 'FLAGGED_FOR_REVIEW' %}<div class="card"><b>Flagged for review.</b> The agent did not create a purchase request. Fix the data or supplier terms and evaluate again.</div>{% endif %}
+<p><a href="{{ url_for('dashboard') }}">← Back to dashboard</a></p>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% block body %}
+<h1>Order Monitoring and Exception Review <span class="mute">· UC-08, UC-12</span></h1>
+<form method="post" action="{{ url_for('review_orders') }}"><button>Run AI order review (6.4)</button></form>
+<h2>Purchase orders</h2>
+<table><tr><th>POID</th><th>Supplier</th><th>OrderDate</th><th>ExpectedDeliveryDate</th><th>TotalAmount</th><th>Status</th><th></th></tr>
+{% for p in pos %}<tr><td>PO-{{p.POID}}</td><td>{{p.SupplierName}}</td><td>{{p.OrderDate}}</td><td>{{p.ExpectedDeliveryDate}}</td><td>${{'%.2f'|format(p.TotalAmount)}}</td>
+<td><span class="chip {{p.Status}}">{{p.Status.replace('_',' ').title()}}</span>{% if p.HoldReason %}<br><small>{{p.HoldReason}}</small>{% endif %}</td>
+<td>{% if p.Status in ('SUBMITTED','CONFIRMED','PARTIALLY_RECEIVED') %}<form method="post" action="{{ url_for('simulate_overdue', po_id=p.POID) }}"><button class="sec" title="Demo only">Simulate overdue</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="7" class="mute">No purchase orders yet.</td></tr>{% endfor %}</table>
+<h2><span class="ailabel">AI exception review</span></h2>
+{% for e in exceptions %}<div class="card ai"><span class="chip {{e.ReviewStatus}}">{{e.ReviewStatus.title()}}</span>
+ <span class="mute">{{e.RelatedRecordType.replace('_',' ').title()}} {{e.RelatedRecordID}} · {{e.Timestamp}}</span>
+ <p>{{e.OutputSummary}}</p>
+ {% if e.ReviewStatus == 'ESCALATED' %}<form method="post" action="{{ url_for('resolve', did=e.DecisionID) }}">
+  {% if e.RelatedRecordType == 'PURCHASE_ORDER' and 'Draft message:' in e.OutputSummary %}
+  <textarea name="message" rows="2" style="width:100%">{{ e.OutputSummary.split('Draft message: ')[1] }}</textarea><br>
+  <button name="send_message" value="1">Approve &amp; send message</button>{% endif %}
+  <input name="note" placeholder="Decision / note" style="width:300px"> <button class="sec">Mark resolved</button></form>{% endif %}
+</div>{% else %}<p class="mute">No exception reviews yet.</p>{% endfor %}
+{% if outbox %}<h2>Messages sent to suppliers</h2><table><tr><th>When</th><th>PO</th><th>To</th><th>Message</th></tr>
+{% for m in outbox %}<tr><td>{{m.SentAt}}</td><td>PO-{{m.POID}}</td><td>{{m.ToEmail}}</td><td>{{m.Body}}</td></tr>{% endfor %}</table>{% endif %}
+{% endblock %}

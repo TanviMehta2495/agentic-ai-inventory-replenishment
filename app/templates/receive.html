@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block body %}
+<h1>Receive Shipment <span class="mute">· UC-09, UC-10, UC-11</span></h1>
+<form class="card big" method="get">Scan or enter POID: <input name="poid" value="{{po.POID if po}}" autofocus> <button>Find order</button>
+ {% if open_pos %}<span class="mute">Open: {% for o in open_pos %}PO-{{o.POID}} ({{o.Status}}){{', ' if not loop.last}}{% endfor %}</span>{% endif %}</form>
+{% if po %}
+<div class="card"><b>PO-{{po.POID}}</b> · {{po.SupplierName}} · OrderDate {{po.OrderDate}} · <span class="chip {{po.Status}}">{{po.Status}}</span></div>
+{% if po.Status in ('SUBMITTED','CONFIRMED','DELAYED','PARTIALLY_RECEIVED') %}
+<form method="post" class="big"><input type="hidden" name="poid" value="{{po.POID}}">
+<table><tr><th>SKU</th><th>Product</th><th>Ordered Quantity</th><th>Previously accepted</th><th>ReceivedQuantity (counted)</th><th>Damaged units</th></tr>
+{% for it in items %}<tr><td>{{it.SKU}}</td><td>{{it.Name}}</td><td>{{it.Quantity}}</td><td>{{it.PrevAccepted}}</td>
+<td><input type="number" min="0" name="rec_{{it.POItemID}}" value="{{it.Quantity - it.PrevAccepted}}"></td>
+<td><input type="number" min="0" name="dmg_{{it.POItemID}}" value="0"></td></tr>{% endfor %}</table><br>
+<input name="notes" placeholder="Inspection notes" style="width:60%"> <button>Submit receipt</button>
+<p class="mute">AcceptedQuantity and DiscrepancyStatus are calculated by the receiving policy. Only AcceptedQuantity is added to CurrentStock.</p></form>
+{% else %}<p class="mute">This order is not open for receiving.</p>{% endif %}{% endif %}
+{% endblock %}

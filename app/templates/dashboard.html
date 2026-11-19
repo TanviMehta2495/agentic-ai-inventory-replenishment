@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block body %}
+<h1>Inventory Status Dashboard <span class="mute">· UC-01, UC-13</span></h1>
+<div class="counters">
+ <div class="card">Flagged products<b>{{counts.flagged}}</b></div>
+ <div class="card">Requests pending approval<b>{{counts.pending}}</b></div>
+ <div class="card">Delayed orders<b>{{counts.delayed}}</b></div>
+ <div class="card">Receipt discrepancies<b>{{counts.discrepancies}}</b></div>
+</div>
+<form method="post" action="{{ url_for('run_monitoring') }}"><button>Run AI inventory monitoring (6.1)</button></form>
+<h2>Products</h2>
+<table><tr><th>SKU</th><th>Name</th><th>CurrentStock</th><th>ReorderLevel</th><th>SafetyStock</th><th><span class="ailabel">AI assessment</span> (OutputSummary)</th><th></th></tr>
+{% for p in products %}<tr>
+<td>{{p.SKU}}</td><td>{{p.Name}}</td><td>{{p.CurrentStock}}</td><td>{{p.ReorderLevel}}</td><td>{{p.SafetyStock}}</td>
+<td>{% if p.OutputSummary %}<span class="chip {{p.ReviewStatus}}">{{p.ReviewStatus.replace('_',' ').title()}}</span> {{p.OutputSummary}}{% else %}<span class="mute">Not assessed yet</span>{% endif %}</td>
+<td><form method="post" action="{{ url_for('evaluate', product_id=p.ProductID) }}"><button class="sec">Evaluate</button></form></td>
+</tr>{% endfor %}</table>
+<h2>Purchase requests waiting for you</h2>
+<table><tr><th>#</th><th>Product</th><th>RecommendedQuantity</th><th>Proposed supplier</th><th>EstimatedCost</th><th>Risk</th><th>Status</th><th></th></tr>
+{% for r in pending %}<tr><td>{{r.RecommendationID}}</td><td>{{r.SKU}} {{r.Name}}</td><td>{{r.RecommendedQuantity or '—'}}</td>
+<td>{{r.SupplierName or '—'}}</td><td>{{ '$%.2f'|format(r.EstimatedCost) if r.EstimatedCost else '—' }}</td>
+<td><span class="chip {{r.RiskLevel}}">{{r.RiskLevel}}</span></td><td><span class="chip {{r.Status}}">{{r.Status.replace('_',' ').title()}}</span></td>
+<td><a class="btn" href="{{ url_for('review', rid=r.RecommendationID) }}">Review</a></td></tr>
+{% else %}<tr><td colspan="8" class="mute">Nothing waiting. Click “Evaluate” on a product to run a replenishment evaluation (6.2).</td></tr>{% endfor %}</table>
+{% endblock %}
